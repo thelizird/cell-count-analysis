@@ -1,6 +1,7 @@
 import sqlite3
 import pandas as pd
-
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 
 def part2_frequency(conn):
@@ -13,8 +14,44 @@ def part2_frequency(conn):
     melted['percentage'] = melted['count'] / melted['total_count'] * 100
 
     print(melted.head())
+    melted.to_sql('cell_frequencies', conn, if_exists='replace', index=False)
+    return melted
 
+def part3_statistics(conn):
+    query = '''
+        SELECT cf.*, s.sample_type, sub.condition, sub.treatment, sub.response
+        FROM cell_frequencies cf
+        JOIN samples s ON cf.sample_id = s.sample_id
+        JOIN subjects sub ON s.subject_id = sub.subject_id
+        WHERE sub.condition = 'melanoma'
+        AND sub.treatment = 'miraclib'
+        AND s.sample_type = 'PBMC'
+    '''
+    df = pd.read_sql(query, conn)
+    sns.boxplot(x='population', y='percentage', hue='response', data=df)
+    plt.title('Responders vs Non-Responders')
+    plt.savefig('responders_vs_non_responders.png')
+    plt.close()
+
+    from scipy import stats
+    populations = df['population'].unique()
+    results = []
+    for pop in populations:
+        pop_data = df[df['population'] == pop]
+        responders = pop_data[pop_data['response'] == 'yes']['percentage']
+        non_responders = pop_data[pop_data['response'] == 'no']['percentage']
+        stat, p_value = stats.mannwhitneyu(responders, non_responders)
+        results.append({
+            'population': pop,
+            'statistic': stat,
+            'p_value': p_value,
+            'significant': p_value < 0.05
+        })
+    results_df = pd.DataFrame(results)
+    print(results_df)
+    results_df.to_sql('statistical_results', conn, if_exists='replace', index=False)
 if __name__ == "__main__":
     conn = sqlite3.connect('cell_data.db')
     freq_df = part2_frequency(conn)
+    part3_statistics(conn)
     conn.close()
