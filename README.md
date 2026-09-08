@@ -34,4 +34,4 @@ This is the Streamlit app that reads the computed results from the database and 
 The database acts as the interface between stages. load_data.py writes raw data in, analysis.py reads it and writes results back, and the dashboard only reads. This means each step can run independently, and the dashboard doesn't need to recompute anything. It just displays what's already in the database. 
 
 ## Dashboard
-### coming soon after i push to github
+https://cell-count-analysis-4tsrew7nmiahfggejgsro7.streamlit.app/
