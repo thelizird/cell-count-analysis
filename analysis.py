@@ -50,8 +50,27 @@ def part3_statistics(conn):
     results_df = pd.DataFrame(results)
     print(results_df)
     results_df.to_sql('statistical_results', conn, if_exists='replace', index=False)
+
+def part4_subset(conn):
+    query = '''
+        SELECT s.*, sub.project_id, sub.condition, sub.sex, sub.treatment, sub.response
+        FROM samples s
+        JOIN subjects sub ON s.subject_id = sub.subject_id
+        WHERE sub.condition = 'melanoma'
+        AND sub.treatment = 'miraclib'
+        AND s.sample_type = 'PBMC'
+        AND s.time_from_treatment_start = 0
+    '''
+    df = pd.read_sql(query, conn)
+    print(df.groupby('project_id')['sample_id'].count())
+    print(df.groupby('response')['subject_id'].nunique())
+    print(df.groupby('sex')['subject_id'].nunique())
+
+    df.to_sql('part4_baseline', conn, if_exists='replace', index=False)
+
 if __name__ == "__main__":
     conn = sqlite3.connect('cell_data.db')
     freq_df = part2_frequency(conn)
     part3_statistics(conn)
+    part4_subset(conn)
     conn.close()
